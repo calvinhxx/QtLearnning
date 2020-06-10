@@ -1,0 +1,58 @@
+/*公用*/
+body {
+    font-size:13px;
+    padding:0;
+    margin:0;
+    font-family:"微软雅黑","宋体",Arial;
+    background:black;
+    background-size:100% 100%;
+    width:100%;
+}
+ 
+#home {
+    opacity: 0.85;
+    filter: alpha(opacity=95);
+    box-shadow:0 0 10px #000;
+    margin:0px;
+    background:#fff;
+    overflow:auto;
+    border:solid 1px #fff;
+}
+#blogTitle {
+color:blue;
+
+                                     height: 120px;
+
+                             clear: both; 
+
+                                     background-image:url("https://images2015.cnblogs.com/blog/1062569/201611/1062569-20161115122914232-1696133774.jpg");
+
+                                     background-position:center;
+
+}
+/*推荐和反对*/
+#div_digg {
+    padding: 10px;
+    position: fixed;
+    _position: absolute;
+    z-index: 1000;
+    bottom: 20px;
+    right: 0;
+    _right: 117px;
+    border: 1px solid #D9DBE1;
+    background-color: #FFFFFF;
+    filter: alpha(Opacity=80);
+    -moz-opacity: 0.8;
+    opacity: 0.8;
+}
+
+.icon_favorite {
+    background: transparent url('https://files.cnblogs.com/files/jackson0714/kj.gif') no-repeat 0 0;
+    padding-left: 16px;
+}
+
+#blog_post_info_block a {
+    text-decoration: none;
+    color: #5B9DCA;
+    padding: 3px;
+}
