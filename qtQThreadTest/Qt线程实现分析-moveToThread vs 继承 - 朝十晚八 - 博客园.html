@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<!-- saved from url=(0049)https://www.cnblogs.com/swarmbees/p/10862160.html -->
+<html lang="zh-cn" xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="origin">
+    <meta property="og:description" content="最近抽空研究了下QThread，使用起来方式多种多样，但是在使用的同时，我们也应该去了解Qt的线程它到底是怎么玩儿的。 Qt的帮助文档里讲述了2种QThread的使用方式，一种是moveToThrea">
+    <meta http-equiv="Cache-Control" content="no-transform">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园</title>
+    <link id="favicon" rel="shortcut icon" href="https://common.cnblogs.com/favicon.ico?v=20200522" type="image/x-icon">
+    
+    <link rel="stylesheet" href="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/blog-common.min.css">
+    <link id="MainCss" rel="stylesheet" href="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/bundle-darkgreentrip.min.css">
+    <link type="text/css" rel="stylesheet" href="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/custom.css">
+    <link id="mobile-style" media="only screen and (max-width: 767px)" type="text/css" rel="stylesheet" href="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/bundle-darkgreentrip-mobile.min.css">
+    
+    <link type="application/rss+xml" rel="alternate" href="https://www.cnblogs.com/swarmbees/rss">
+    <link type="application/rsd+xml" rel="EditURI" href="https://www.cnblogs.com/swarmbees/rsd.xml">
+    <link type="application/wlwmanifest+xml" rel="wlwmanifest" href="https://www.cnblogs.com/swarmbees/wlwmanifest.xml">
+    <script src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/amp4ads-host-v0.js.下载"></script><script async="" src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/analytics.js.下载"></script><script src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/hm.js.下载"></script><script src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/jquery-2.2.0.min.js.下载"></script>
+    <script src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/blog-common.min.js.下载"></script>
+    <script>
+        var currentBlogId = 291617;
+        var currentBlogApp = 'swarmbees';
+        var cb_enable_mathjax = false;
+        var isLogined = false;
+        var skinName = 'darkgreentrip';
+    </script>
+    
+    
+    
+<link rel="preload" href="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/f.txt" as="script"><script type="text/javascript" src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/f.txt"></script><script src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/pubads_impl_2020060103.js.下载" async=""></script><link rel="prefetch" href="https://f815c6c0f7e8cc560f2aae5ee55a7559.safeframe.googlesyndication.com/safeframe/1-0-37/html/container.html"><link rel="prefetch" href="https://tpc.googlesyndication.com/safeframe/1-0-37/html/container.html"></head>
+<body>
+    <a name="top"></a>
+    
+    
+<!--done-->
+<div id="home">
+<div id="header">
+	<div id="blogTitle">
+        <a id="lnkBlogLogo" href="https://www.cnblogs.com/swarmbees/"><img id="blogLogo" src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/logo.gif" alt="返回主页"></a>		
+		
+<!--done-->
+<h1><a id="Header1_HeaderTitle" class="headermaintitle HeaderMainTitle" href="https://www.cnblogs.com/swarmbees/">朝十晚八</a>
+</h1>
+<h2>
+记录生活，感悟人生
+</h2>
+
+
+
+
+		
+	</div><!--end: blogTitle 博客的标题和副标题 -->
+	<div id="navigator">
+		
+<ul id="navList">
+<li><a id="blog_nav_sitehome" class="menu" href="https://www.cnblogs.com/">
+博客园</a>
+</li>
+<li>
+<a id="blog_nav_myhome" class="menu" href="https://www.cnblogs.com/swarmbees/">
+首页</a>
+</li>
+<li>
+
+<a id="blog_nav_newpost" class="menu" href="https://i.cnblogs.com/EditPosts.aspx?opt=1">
+新随笔</a>
+</li>
+<li>
+<a id="blog_nav_contact" class="menu" href="https://msg.cnblogs.com/send/%E6%9C%9D%E5%8D%81%E6%99%9A%E5%85%AB">
+联系</a></li>
+<li>
+<a id="blog_nav_rss" class="menu" href="javascript:void(0)" data-rss="https://www.cnblogs.com/swarmbees/rss/">
+订阅</a>
+<!--<partial name="./Shared/_XmlLink.cshtml" model="Model" /></li>--></li>
+<li>
+<a id="blog_nav_admin" class="menu" href="https://i.cnblogs.com/">
+管理</a>
+</li>
+</ul>
+
+
+		<div class="blogStats">
+			
+			<span id="stats_post_count">随笔 - 
+179&nbsp; </span>
+<span id="stats_article_count">文章 - 
+9&nbsp; </span>
+<span id="stats-comment_count">评论 - 
+264</span>
+
+			
+		</div><!--end: blogStats -->
+	</div><!--end: navigator 博客导航栏 -->
+</div><!--end: header 头部 -->
+
+<div id="main">
+	<div id="mainContent">
+	<div class="forFlow">
+		<div id="post_detail">
+    <!--done-->
+    <div id="topics">
+        <div class="post">
+            <h1 class="postTitle">
+                
+<a id="cb_post_title_url" class="postTitle2" href="https://www.cnblogs.com/swarmbees/p/10862160.html">Qt线程实现分析-moveToThread vs 继承</a>
+
+            </h1>
+            <div class="clear"></div>
+            <div class="postBody">
+                
+<div id="cnblogs_post_body" class="blogpost-body cnblogs-markdown">
+    <p>最近抽空研究了下QThread，使用起来方式多种多样，但是在使用的同时，我们也应该去了解Qt的线程它到底是怎么玩儿的。</p>
+<p>Qt的帮助文档里讲述了2种QThread的使用方式，一种是moveToThread，另一种是继承QThread实现run方法，下面我们分别来分析下</p>
+<h2 id="一、movetothread">一、moveToThread</h2>
+<p>首先我们来先分析move这种方式，他的使用可能像下面这样</p>
+<pre><code class="hljs haskell"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-type">Worker</span> : public <span class="hljs-type">QObject</span>
+{
+public slots:
+    void doWork(<span class="hljs-title">const</span> <span class="hljs-type">QString</span> &amp;) {
+        emit resultReady(<span class="hljs-title">result</span>);
+    }
+};
+
+<span class="hljs-keyword">class</span> <span class="hljs-type">Controller</span> : public <span class="hljs-type">QObject</span>
+{
+    <span class="hljs-type">QThread</span> workerThread;
+public:
+    <span class="hljs-type">Controller</span>() {
+        <span class="hljs-type">Worker</span> *worker = new <span class="hljs-type">Worker</span>;
+        worker-&gt;moveToThread(&amp;<span class="hljs-title">workerThread</span>);
+        connect(&amp;<span class="hljs-title">workerThread</span>, &amp;<span class="hljs-type">QThread</span>::<span class="hljs-title">finished</span>, <span class="hljs-title">worker</span>, &amp;<span class="hljs-type">QObject</span>::<span class="hljs-title">deleteLater</span>);
+        connect(<span class="hljs-title">this</span>, &amp;<span class="hljs-type">Controller</span>::<span class="hljs-title">operate</span>, <span class="hljs-title">worker</span>, &amp;<span class="hljs-type">Worker</span>::<span class="hljs-title">doWork</span>);
+        connect(<span class="hljs-title">worker</span>, &amp;<span class="hljs-type">Worker</span>::<span class="hljs-title">resultReady</span>, <span class="hljs-title">this</span>, &amp;<span class="hljs-type">Controller</span>::<span class="hljs-title">handleResults</span>);
+        workerThread.start();
+    }
+    ~<span class="hljs-type">Controller</span>() {
+        workerThread.quit();
+        workerThread.wait();
+    }
+};
+</span></code></pre>
+<p>这是一个标准的多线程使用方式，复杂的逻辑操作我们可以放在Worker对象的槽函数中进行，因为只有槽函数是在工作线程中执行的，下面我记录了各个函数执行时所在的线程ID</p>
+<blockquote>
+<p>由于线程ID是每次会发生编号，可能每个人测试的结果不一样</p>
+</blockquote>
+<ul>
+<li>Worker(): 0x4c34  主线程</li>
+<li>doWork(): 0x40c8  工作线程</li>
+<li>handleResults(): 0x4c34 主线程</li>
+<li>~Worker(): 0x40c8 工作线程</li>
+</ul>
+<p><strong>细心的同学就会发现了，Worker对象的构造函数和析构函数不在同一个线程里边</strong>：Worker对象的事件循环已经放到子线程中了，Worker对象删除时，是工作线程通过抛出DeferredDelete事件执行的</p>
+<p>下面结合我自己之前的一些使用理解，来分析下moveToThread是如何运作的：</p>
+<blockquote>
+<p>假设有这么一种场景，需要把对象obj从线程A移动到线程B</p>
+</blockquote>
+<p>首先我自己看了Qt的这个函数源码，这里把他翻译成为了白话文，我们大家可以来看下</p>
+<h3 id="1、一些异常判断">1、一些异常判断</h3>
+<ol>
+<li>确认不在同一个线程里</li>
+<li>移动的对象不能有父类</li>
+<li>不能移动Widget窗体</li>
+<li>支持移动一个无所属线程的对象到指定线程</li>
+<li>对象不在C线程时，C线程不能把对象移动到B线程，只有A线程可以</li>
+</ol>
+<h3 id="2、movetothread_helper">2、moveToThread_helper</h3>
+<ol>
+<li>构造ThreadChange事件，发送给自己</li>
+<li>迭代所有子对象，并执行moveToThread_helper方法</li>
+</ol>
+<h3 id="3、setthreaddata_helper">3、setThreadData_helper</h3>
+<ol>
+<li>循环遍历，把线程A中obj对象的所有事件移动到B线程中</li>
+<li>如果移动了新事件到线程B中，则我们需要唤醒B线程，让他去派发事件</li>
+<li>迭代所有子对象，并执行setThreadData_helper方法</li>
+</ol>
+<h2 id="二、继承qthread">二、继承QThread</h2>
+<p>假设说我们继承QThread实现了一个UsThread，使用起来可能像这样</p>
+<pre><code class="hljs nginx"><span class="hljs-attribute">UsThread</span> thd;
+</code></pre>
+<p>经过我的实践，很可惜，<strong>除了run函数以外，所有的函数执行，包括对象都在主线程中</strong></p>
+<blockquote>
+<p>如果你想着thd.moveToThread这么干，那么可能会被打死</p>
+</blockquote>
+<p><strong>结论</strong>：个人推荐使用moveToThread这种方式进行子线程编写</p>
+<p>更详细的测试结果可以参考<br>
+<a href="https://blog.csdn.net/an505479313/article/details/50351745">QThread使用——关于run和movetoThread的区别</a></p>
+
+</div>
+<div id="MySignature" style="display: block;"><a href="http://www.cnblogs.com/swarmbees/">奋斗中的无名小卒。。。</a></div>
+<div class="clear"></div>
+<div id="blog_post_info_block"><div id="BlogPostCategory">
+    分类: 
+            <a href="https://www.cnblogs.com/swarmbees/category/846135.html" target="_blank">qt学习案例</a></div>
+<div id="EntryTag">
+    标签: 
+            <a href="https://www.cnblogs.com/swarmbees/tag/Qt%E7%BA%BF%E7%A8%8B/">Qt线程</a></div>
+
+    <div id="blog_post_info">
+<div id="green_channel">
+        <a href="javascript:void(0);" id="green_channel_digg" onclick="DiggIt(10862160,cb_blogId,1);green_channel_success(this,&#39;谢谢推荐！&#39;);">好文要顶</a>
+        <a id="green_channel_follow" onclick="follow(&#39;951a6fdd-1a3c-e611-9fc1-ac853d9f53cc&#39;);" href="javascript:void(0);">关注我</a>
+    <a id="green_channel_favorite" onclick="AddToWz(cb_entryId);return false;" href="javascript:void(0);">收藏该文</a>
+    <a id="green_channel_weibo" href="javascript:void(0);" title="分享至新浪微博" onclick="ShareToTsina()"><img src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/icon_weibo_24.png" alt=""></a>
+    <a id="green_channel_wechat" href="javascript:void(0);" title="分享至微信" onclick="shareOnWechat()"><img src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/wechat.png" alt=""></a>
+</div>
+<div id="author_profile">
+    <div id="author_profile_info" class="author_profile_info">
+            <a href="https://home.cnblogs.com/u/swarmbees/" target="_blank"><img src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/20160627221508.png" class="author_avatar" alt=""></a>
+        <div id="author_profile_detail" class="author_profile_info">
+            <a href="https://home.cnblogs.com/u/swarmbees/">朝十晚八</a><br>
+            <a href="https://home.cnblogs.com/u/swarmbees/followees/">关注 - 15</a><br>
+            <a href="https://home.cnblogs.com/u/swarmbees/followers/">粉丝 - 196</a>
+        </div>
+    </div>
+    <div class="clear"></div>
+    <div id="author_profile_honor"></div>
+    <div id="author_profile_follow">
+                <a href="javascript:void(0);" onclick="follow(&#39;951a6fdd-1a3c-e611-9fc1-ac853d9f53cc&#39;);return false;">+加关注</a>
+    </div>
+</div>
+<div id="div_digg">
+    <div class="diggit" onclick="votePost(10862160,&#39;Digg&#39;)">
+        <span class="diggnum" id="digg_count">0</span>
+    </div>
+    <div class="buryit" onclick="votePost(10862160,&#39;Bury&#39;)">
+        <span class="burynum" id="bury_count">0</span>
+    </div>
+    <div class="clear"></div>
+    <div class="diggword" id="digg_tips">
+    </div>
+</div>
+
+<script type="text/javascript">
+    currentDiggType = 0;
+</script></div>
+    <div class="clear"></div>
+    <div id="post_next_prev">
+
+    <a href="https://www.cnblogs.com/swarmbees/p/10856833.html" class="p_n_p_prefix">« </a> 上一篇：    <a href="https://www.cnblogs.com/swarmbees/p/10856833.html" title="发布于 2019-05-13 17:02">个人简历</a>
+    <br>
+    <a href="https://www.cnblogs.com/swarmbees/p/10867898.html" class="p_n_p_prefix">» </a> 下一篇：    <a href="https://www.cnblogs.com/swarmbees/p/10867898.html" title="发布于 2019-05-15 10:25">Qt疑难问题-模态窗口父类被析构</a>
+
+</div>
+</div>
+            </div>
+            <div class="postDesc">posted @ 
+<span id="post-date">2019-05-14 14:53</span>&nbsp;
+<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a>&nbsp;
+阅读(<span id="post_view_count">1063</span>)&nbsp;
+评论(<span id="post_comment_count">0</span>)&nbsp;
+<a href="https://i.cnblogs.com/EditPosts.aspx?postid=10862160" rel="nofollow">编辑</a>&nbsp;
+<a href="javascript:void(0)" onclick="AddToWz(10862160);return false;">收藏</a></div>
+        </div>
+	    
+	    
+    </div><!--end: topics 文章、评论容器-->
+</div>
+<script src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/highlight.min.js.下载"></script>
+<script>markdown_highlight();</script>
+<script>
+    var allowComments = true, cb_blogId = 291617, cb_blogApp = 'swarmbees', cb_blogUserGuid = '951a6fdd-1a3c-e611-9fc1-ac853d9f53cc';
+    var cb_entryId = 10862160, cb_entryCreatedDate = '2019-05-14 14:53', cb_postType = 1; 
+    loadViewCount(cb_entryId);
+    loadSideColumnAd();
+</script><a name="!comments"></a>
+<div id="blog-comments-placeholder"></div>
+<script>
+    var commentManager = new blogCommentManager();
+    commentManager.renderComments(0);
+</script>
+
+<div id="comment_form" class="commentform">
+    <a name="commentform"></a>
+    <div id="divCommentShow"></div>
+    <div id="comment_nav"><span id="span_refresh_tips"></span><a href="javascript:void(0);" onclick="return RefreshCommentList();" id="lnk_RefreshComments" runat="server" clientidmode="Static">刷新评论</a><a href="https://www.cnblogs.com/swarmbees/p/10862160.html#" onclick="return RefreshPage();">刷新页面</a><a href="https://www.cnblogs.com/swarmbees/p/10862160.html#top">返回顶部</a></div>
+    <div id="comment_form_container" style="visibility: visible;"><div class="login_tips">
+    注册用户登录后才能发表评论，请 
+    <a rel="nofollow" href="javascript:void(0);" class="underline" onclick="return login(&#39;commentform&#39;);">登录</a>
+     或 
+    <a rel="nofollow" href="javascript:void(0);" class="underline" onclick="return register();">注册</a>，
+    <a href="https://www.cnblogs.com/">访问</a> 网站首页。
+</div></div>
+    <div class="ad_text_commentbox" id="ad_text_under_commentbox"></div>
+    <div id="ad_t2"><a href="https://www.wenjuan.com/s/3uIjeq0/" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-博客园问卷调查&#39;)">【推荐】了解你才能更懂你，博客园首发问卷调查，助力社区新升级</a><br><a href="http://www.ucancode.com/index.htm" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-ucancode&#39;)">【推荐】超50万行VC++源码: 大型组态工控、电力仿真CAD与GIS源码库</a><br><a href="https://developer.aliyun.com/article/717197?utm_content=g_1000088944" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-阿里云开发者社区&#39;)">【推荐】开放下载！《长安十二时辰》爆款背后的优酷技术秘籍首次公开</a><br></div>
+    <div id="opt_under_post"></div>
+    <script async="async" src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/gpt.js.下载"></script>
+    <script>
+        var googletag = googletag || {};
+        googletag.cmd = googletag.cmd || [];
+    </script>
+    <script>
+        googletag.cmd.push(function () {
+            googletag.defineSlot("/1090369/C1", [300, 250], "div-gpt-ad-1546353474406-0").addService(googletag.pubads());
+            googletag.defineSlot("/1090369/C2", [468, 60], "div-gpt-ad-1539008685004-0").addService(googletag.pubads());
+            googletag.pubads().enableSingleRequest();
+            googletag.enableServices();
+        });
+    </script>
+    <div id="cnblogs_c1" class="c_ad_block">
+        <div id="div-gpt-ad-1546353474406-0" style="height:250px; width:300px;" data-google-query-id="CI_D6ufw9ukCFZ4cKgodiBkF0Q"><div id="google_ads_iframe_/1090369/C1_0__container__" style="border: 0pt none;"><iframe id="google_ads_iframe_/1090369/C1_0" title="3rd party ad content" name="google_ads_iframe_/1090369/C1_0" width="300" height="250" scrolling="no" marginwidth="0" marginheight="0" frameborder="0" style="border: 0px; vertical-align: bottom;" data-google-container-id="1" data-load-complete="true" src="./Qt线程实现分析-moveToThread vs 继承 - 朝十晚八 - 博客园_files/saved_resource.html"></iframe></div></div>
+    </div>
+    <div id="under_post_news"><div class="recomm-block"><b>相关博文：</b><br>·  <a title="重点：怎样正确的使用QThread类（注：包括推荐使用QThread线程的新方法QObject::moveToThread）" href="https://www.cnblogs.com/liushui-sky/p/5829563.html" target="_blank" onclick="clickRecomItmem(5829563)">重点：怎样正确的使用QThread类（注：包括推荐使用QThread线程的新方法QObject::moveToThread）</a><br>·  <a title="QT5 Thread线程" href="https://www.cnblogs.com/flowingwind/p/8361939.html" target="_blank" onclick="clickRecomItmem(8361939)">QT5 Thread线程</a><br>·  <a title="Qt——线程与定时器" href="https://www.cnblogs.com/hellovenus/p/qt_thread_timer.html" target="_blank" onclick="clickRecomItmem(6389528)">Qt——线程与定时器</a><br>·  <a title="Qt线程的简单使用（一）——通过QObject::moveToThread()创建线程" href="https://www.cnblogs.com/vegetable/p/6648609.html" target="_blank" onclick="clickRecomItmem(6648609)">Qt线程的简单使用（一）——通过QObject::moveToThread()创建线程</a><br>·  <a title="QT GUI（主）线程与子线程之间的通信——使用跨线程的信号槽" href="https://www.cnblogs.com/findumars/p/4993546.html" target="_blank" onclick="clickRecomItmem(4993546)">QT GUI（主）线程与子线程之间的通信——使用跨线程的信号槽</a><br>»  <a target="_blank" href="https://recomm.cnblogs.com/blogpost/10862160">更多推荐...</a></div></div>
+    <div id="cnblogs_c2" class="c_ad_block">
+        <div id="div-gpt-ad-1539008685004-0" style="height:60px; width:468px;" data-google-query-id="CJDD6ufw9ukCFZ4cKgodiBkF0Q"><div id="google_ads_iframe_/1090369/C2_0__container__" style="border: 0pt none; width: 468px; height: 60px;"></div></div>
+    </div>
+    <div id="under_post_kb">
+<div class="itnews c_ad_block">
+    <b>最新 IT 新闻</b>:
+    <br>
+ ·              <a href="https://news.cnblogs.com/n/663837/" target="_blank">百度"高考放心搜计划"：帮考生辨别"野鸡大学”实现智能估分</a>
+            <br>
+ ·              <a href="https://news.cnblogs.com/n/663836/" target="_blank">科大讯飞刘庆峰发内部信：正迎来前所未有产业机遇</a>
+            <br>
+ ·              <a href="https://news.cnblogs.com/n/663835/" target="_blank">瑞幸挣扎续命：首席人力资源官3月入职5月离职</a>
+            <br>
+ ·              <a href="https://news.cnblogs.com/n/663834/" target="_blank">王林发：盘点近25年来，"超级病毒"为何多数源于蝙蝠</a>
+            <br>
+ ·              <a href="https://news.cnblogs.com/n/663833/" target="_blank">苹果通知员工6月15日开始首批复工 人数"非常有限"</a>
+            <br>
+    » <a href="https://news.cnblogs.com/" title="IT 新闻" target="_blank">更多新闻...</a>
+</div></div>
+    <div id="HistoryToday" class="c_ad_block"></div>
+    <script type="text/javascript">
+        fixPostBody();
+        deliverBigBanner();
+setTimeout(function() { incrementViewCount(cb_entryId); }, 50);        deliverAdT2();
+        deliverAdC1();
+        deliverAdC2();
+        loadNewsAndKb();
+        loadBlogSignature();
+LoadPostCategoriesTags(cb_blogId, cb_entryId);        LoadPostInfoBlock(cb_blogId, cb_entryId, cb_blogApp, cb_blogUserGuid);
+        GetPrevNextPost(cb_entryId, cb_blogId, cb_entryCreatedDate, cb_postType);
+        loadOptUnderPost();
+        GetHistoryToday(cb_blogId, cb_blogApp, cb_entryCreatedDate);
+    </script>
+</div>
+	</div><!--end: forFlow -->
+	</div><!--end: mainContent 主体内容容器-->
+
+	<div id="sideBar">
+		<div id="sideBarMain">
+			
+<div id="sidebar_news" class="newsItem"><!--done-->
+<h3 class="catListTitle">公告</h3>
+
+<div id="blog-news">
+    <div>QQ：<span style="color:red;">1134024095</span></div>
+    <div id="profile_block">
+        昵称：
+        <a href="https://home.cnblogs.com/u/swarmbees/">
+            朝十晚八
+        </a>
+        <br>
+        园龄：
+        <a href="https://home.cnblogs.com/u/swarmbees/" title="入园时间：2016-06-27">
+            3年11个月
+        </a>
+        <br>
+        粉丝：
+        <a href="https://home.cnblogs.com/u/swarmbees/followers/">
+            196
+        </a>
+        <br>
+        关注：
+        <a href="https://home.cnblogs.com/u/swarmbees/followees/">
+            15
+        </a>
+        <div id="p_b_follow">
+<a href="javascript:void(0)" onclick="follow(&#39;951a6fdd-1a3c-e611-9fc1-ac853d9f53cc&#39;)">+加关注</a></div>
+        <script>getFollowStatus('951a6fdd-1a3c-e611-9fc1-ac853d9f53cc');</script>
+    </div>
+</div>
+
+</div>
+
+<div id="sidebar_ad"></div>
+			<div id="blog-calendar" style="">
+
+<table id="blogCalendar" class="Cal" cellspacing="0" cellpadding="0" title="Calendar" border="0">
+    <tbody>
+        <tr>
+            <td colspan="7">
+                <table class="CalTitle" cellspacing="0" border="0">
+                    <tbody>
+                        <tr>
+                            <td class="CalNextPrev">
+                                <a href="javascript:void(0);" onclick="loadBlogCalendar(&#39;2020/05/10&#39;); return false;">&lt;</a>
+                            </td>
+                            <td align="center">2020年6月</td>
+                            <td align="right" class="CalNextPrev">
+                                <a href="javascript:void(0);" onclick="loadBlogCalendar(&#39;2020/07/10&#39;); return false;">&gt;</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+        <tr>
+                    <th class="CalDayHeader" align="center" abbr="日" scope="col">日</th>
+                    <th class="CalDayHeader" align="center" abbr="一" scope="col">一</th>
+                    <th class="CalDayHeader" align="center" abbr="二" scope="col">二</th>
+                    <th class="CalDayHeader" align="center" abbr="三" scope="col">三</th>
+                    <th class="CalDayHeader" align="center" abbr="四" scope="col">四</th>
+                    <th class="CalDayHeader" align="center" abbr="五" scope="col">五</th>
+                    <th class="CalDayHeader" align="center" abbr="六" scope="col">六</th>
+        </tr>
+            <tr>
+                            <td class="CalOtherMonthDay" align="center">31</td>
+                        <td class="" align="center">
+                            1
+                        </td>
+                        <td class="" align="center">
+                            2
+                        </td>
+                        <td class="" align="center">
+                            3
+                        </td>
+                        <td class="" align="center">
+                            4
+                        </td>
+                        <td class="" align="center">
+                            5
+                        </td>
+                    <td class="CalWeekendDay" align="center">
+                        6
+                    </td>
+            </tr>
+                <tr>
+                        <td class="CalWeekendDay" align="center">
+                            7
+                        </td>
+                            <td class="" align="center">
+                                8
+                            </td>
+                            <td class="" align="center">
+                                9
+                            </td>
+                            <td class="CalTodayDay" align="center">
+                                10
+                            </td>
+                            <td class="" align="center">
+                                11
+                            </td>
+                            <td class="" align="center">
+                                12
+                            </td>
+                        <td class="CalWeekendDay" align="center">
+                            13
+                        </td>
+                </tr>
+                <tr>
+                        <td class="CalWeekendDay" align="center">
+                            14
+                        </td>
+                            <td class="" align="center">
+                                15
+                            </td>
+                            <td class="" align="center">
+                                16
+                            </td>
+                            <td class="" align="center">
+                                17
+                            </td>
+                            <td class="" align="center">
+                                18
+                            </td>
+                            <td class="" align="center">
+                                19
+                            </td>
+                        <td class="CalWeekendDay" align="center">
+                            20
+                        </td>
+                </tr>
+                <tr>
+                        <td class="CalWeekendDay" align="center">
+                            21
+                        </td>
+                            <td class="" align="center">
+                                22
+                            </td>
+                            <td class="" align="center">
+                                23
+                            </td>
+                            <td class="" align="center">
+                                24
+                            </td>
+                            <td class="" align="center">
+                                25
+                            </td>
+                            <td class="" align="center">
+                                26
+                            </td>
+                        <td class="CalWeekendDay" align="center">
+                            27
+                        </td>
+                </tr>
+                <tr>
+                        <td class="CalWeekendDay" align="center">
+                            28
+                        </td>
+                            <td class="" align="center">
+                                29
+                            </td>
+                            <td class="" align="center">
+                                30
+                            </td>
+                            <td class="CalOtherMonthDay" align="center">
+                                1
+                            </td>
+                            <td class="CalOtherMonthDay" align="center">
+                                2
+                            </td>
+                            <td class="CalOtherMonthDay" align="center">
+                                3
+                            </td>
+                        <td class="CalOtherMonthDay" align="center">
+                            4
+                        </td>
+                </tr>
+                <tr>
+                        <td class="CalOtherMonthDay" align="center">
+                            5
+                        </td>
+                            <td class="CalOtherMonthDay" align="center">
+                                6
+                            </td>
+                            <td class="CalOtherMonthDay" align="center">
+                                7
+                            </td>
+                            <td class="CalOtherMonthDay" align="center">
+                                8
+                            </td>
+                            <td class="CalOtherMonthDay" align="center">
+                                9
+                            </td>
+                            <td class="CalOtherMonthDay" align="center">
+                                10
+                            </td>
+                        <td class="CalOtherMonthDay" align="center">
+                            11
+                        </td>
+                </tr>
+    </tbody>
+</table></div><script>loadBlogDefaultCalendar();</script>
+			
+			<div id="leftcontentcontainer">
+				<div id="blog-sidecolumn">
+<!-- 搜索 -->
+<div id="sidebar_search" class="sidebar-block">
+    <div id="sidebar_search" class="mySearch">
+        <h3 class="catListTitle">搜索</h3>
+        <div id="sidebar_search_box">
+            <div id="widget_my_zzk" class="div_my_zzk">
+                <input type="text" id="q" onkeydown="return zzk_go_enter(event);" class="input_my_zzk">&nbsp;<input onclick="zzk_go()" type="button" value="找找看" id="btnZzk" class="btn_my_zzk">
+            </div>
+            <div id="widget_my_google" class="div_my_zzk">
+                <input type="text" name="google_q" id="google_q" onkeydown="return google_go_enter(event);" class="input_my_zzk">&nbsp;<input onclick="google_go()" type="button" value="谷歌搜索" class="btn_my_zzk">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 常用链接 -->
+<div id="sidebar_shortcut" class="sidebar-block">
+    <div class="catListLink">
+<h3 class="catListTitle">
+常用链接
+</h3>
+<ul>
+		<li>
+
+<a href="https://www.cnblogs.com/swarmbees/p/" title="我的博客的随笔列表">我的随笔</a>
+</li>
+		<li>
+
+<a href="https://www.cnblogs.com/swarmbees/MyComments.html" title="我的发表过的评论列表">我的评论</a>
+</li>
+		<li>
+
+<a href="https://www.cnblogs.com/swarmbees/OtherPosts.html" title="我评论过的随笔列表">我的参与</a>
+</li>
+		<li>
+
+<a href="https://www.cnblogs.com/swarmbees/RecentComments.html" title="我的博客的评论列表">最新评论</a>
+</li>
+		<li>
+
+<a href="https://www.cnblogs.com/swarmbees/tag/" title="我的博客的标签列表">我的标签</a>
+</li>
+
+</ul>
+<div id="itemListLin_con" style="display:none;">
+<ul>
+
+</ul>
+</div>
+</div>
+
+
+</div>
+
+<!-- 最新随笔 -->
+<div id="sidebar_recentposts" class="sidebar-block">
+    <div class="catListEssay">
+<h3 class="catListTitle">最新随笔</h3>
+<ul>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/12213628.html">1.有前途的程序员的14个习惯，你有几个？</a>
+
+                </li>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/12192102.html">2.Windows下安装Jenkins自动打包</a>
+
+                </li>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/12107755.html">3.Qt-Widgets优秀示例展示</a>
+
+                </li>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/12006601.html">4.Qt之高DPI显示器(二) - 自适配解决方案分析</a>
+
+                </li>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/12004594.html">5.Qt之高DPI显示器(一) - 解决方案整理</a>
+
+                </li>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/11783045.html">6.自定义日历(四)-区间选择控件</a>
+
+                </li>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/11745738.html">7.QCustomplot使用分享(九) 绘制图表-多功能游标</a>
+
+                </li>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/11568821.html">8.Qt无边框窗体-模拟模态窗体抖动效果</a>
+
+                </li>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/11522980.html">9.Qt之键盘事件监听-实时响应大小写Capslock按键</a>
+
+                </li>
+                <li>
+                    
+
+<a href="https://www.cnblogs.com/swarmbees/p/11519796.html">10.QRowTable表格控件(五)-重写表头排序、支持第三次单击恢复默认排序</a>
+
+                </li>
+			
+
+</ul>
+</div>
+
+
+</div>
+
+
+<!-- 我的标签 -->
+
+
+<!-- 积分与排名 -->
+
+
+<!-- 随笔分类、随笔档案、文章分类、新闻分类、相册、链接 -->
+<div id="sidebar_categories">
+    
+        <div id="sidebar_postcategory" class="catListPostCategory sidebar-block">
+            <h3 class="catListTitle">
+                
+
+随笔分类
+<span style="font-size:11px;font-weight:normal">(237)</span>
+
+
+            </h3>
+
+
+            <ul>
+
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/846138.html" rel="" target="">
+    c++浅谈(17)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1359555.html" rel="" target="">
+    Docker(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1473776.html" rel="" target="">
+    Electron(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/969888.html" rel="" target="">
+    go(6)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/846140.html" rel="" target="">
+    java(3)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1479617.html" rel="" target="">
+    libcef(3)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/972224.html" rel="" target="">
+    NSQ(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/921374.html" rel="" target="">
+    python学习之路(14)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/908110.html" rel="" target="">
+    QCustomPlot(9)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/908109.html" rel="" target="">
+    qml学习(16)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/846137.html" rel="" target="">
+    qt经典文章(7)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/846136.html" rel="" target="">
+    qt项目案例(37)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/846135.html" rel="" target="">
+    qt学习案例(47)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1464382.html" rel="" target="">
+    qt疑难问题(7)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1490238.html" rel="" target="">
+    Qt优秀库(5)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/984391.html" rel="" target="">
+    产品展示(5)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/846143.html" rel="" target="">
+    程序日志(5)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1497607.html" rel="" target="">
+    定制控件(14)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1491916.html" rel="" target="">
+    多进程开发(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1608980.html" rel="" target="">
+    高DPI适配(2)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1482850.html" rel="" target="">
+    股票组件(12)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/846139.html" rel="" target="">
+    技术文章(8)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/846142.html" rel="" target="">
+    设计模式(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/846141.html" rel="" target="">
+    思考感悟(6)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/890279.html" rel="" target="">
+    源码编译(8)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/category/1632565.html" rel="" target="">
+    自动化(1)
+</a>
+ 
+
+                        </li>
+
+            </ul>
+
+
+        </div>
+        <div id="sidebar_postarchive" class="catListPostArchive sidebar-block">
+            <h3 class="catListTitle">
+                
+
+随笔档案
+<span style="font-size:11px;font-weight:normal">(179)</span>
+
+
+            </h3>
+
+
+            <ul>
+
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2020/01.html" rel="" target="">
+    2020年1月(2)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2019/12.html" rel="" target="">
+    2019年12月(3)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2019/11.html" rel="" target="">
+    2019年11月(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2019/10.html" rel="" target="">
+    2019年10月(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2019/09.html" rel="" target="">
+    2019年9月(4)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2019/08.html" rel="" target="">
+    2019年8月(5)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2019/07.html" rel="" target="">
+    2019年7月(11)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2019/06.html" rel="" target="">
+    2019年6月(10)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2019/05.html" rel="" target="">
+    2019年5月(11)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2019/04.html" rel="" target="">
+    2019年4月(3)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2018/12.html" rel="" target="">
+    2018年12月(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2018/11.html" rel="" target="">
+    2018年11月(10)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2018/07.html" rel="" target="">
+    2018年7月(4)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2017/12.html" rel="" target="">
+    2017年12月(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2017/08.html" rel="" target="">
+    2017年8月(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2017/04.html" rel="" target="">
+    2017年4月(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2017/03.html" rel="" target="">
+    2017年3月(16)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2017/02.html" rel="" target="">
+    2017年2月(2)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2017/01.html" rel="" target="">
+    2017年1月(3)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2016/12.html" rel="" target="">
+    2016年12月(4)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2016/11.html" rel="" target="">
+    2016年11月(20)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2016/10.html" rel="" target="">
+    2016年10月(4)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2016/09.html" rel="" target="">
+    2016年9月(1)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2016/08.html" rel="" target="">
+    2016年8月(3)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2016/07.html" rel="" target="">
+    2016年7月(8)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/archive/2016/06.html" rel="" target="">
+    2016年6月(49)
+</a>
+ 
+
+                        </li>
+
+            </ul>
+
+
+        </div>
+        <div id="sidebar_imagecategory" class="catListImageCategory sidebar-block">
+            <h3 class="catListTitle">
+                
+
+相册
+<span style="font-size:11px;font-weight:normal">(261)</span>
+
+
+            </h3>
+
+
+            <ul>
+
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1454266.html" rel="nofollow noopener noreferrer" target="">
+    C++(19)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1358692.html" rel="nofollow noopener noreferrer" target="">
+    Docker(11)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1473763.html" rel="nofollow noopener noreferrer" target="">
+    Electron(2)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1351403.html" rel="nofollow noopener noreferrer" target="">
+    python(2)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1475216.html" rel="nofollow noopener noreferrer" target="">
+    QCustomPlot(7)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1502901.html" rel="nofollow noopener noreferrer" target="">
+    qml(30)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1458965.html" rel="nofollow noopener noreferrer" target="">
+    Qt(19)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1489356.html" rel="nofollow noopener noreferrer" target="">
+    QtAv(3)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1494185.html" rel="nofollow noopener noreferrer" target="">
+    QtTreePropertyBrowser(14)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1622128.html" rel="nofollow noopener noreferrer" target="">
+    qt-widgets(48)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1497876.html" rel="nofollow noopener noreferrer" target="">
+    Qt控件列表(48)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1482844.html" rel="nofollow noopener noreferrer" target="">
+    templateLayout(9)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1583650.html" rel="nofollow noopener noreferrer" target="">
+    tigertrade(25)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1505948.html" rel="nofollow noopener noreferrer" target="">
+    表格组件(16)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1491901.html" rel="nofollow noopener noreferrer" target="">
+    多进程开发(3)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1554788.html" rel="nofollow noopener noreferrer" target="">
+    分享_表格(3)
+</a>
+ 
+
+                        </li>
+                        <li>
+                            
+<a href="https://www.cnblogs.com/swarmbees/gallery/1498827.html" rel="nofollow noopener noreferrer" target="">
+    股票组件(2)
+</a>
+ 
+
+                        </li>
+
+            </ul>
+
+
+        </div>
+
+</div>
+
+<!-- 最新评论 -->
+<div id="sidebar_recentcomments" class="sidebar-block">
+    <div class="catListComment">
+<h3 class="catListTitle">最新评论</h3>
+
+	<div class="RecentCommentBlock">
+        <ul>
+                    <li class="recent_comment_title"><a href="https://www.cnblogs.com/swarmbees/p/10844338.html">1. Re:Qt实现炫酷启动图-动态进度条</a></li>
+                    <li class="recent_comment_body"><p>你好，学习一下，535031618@qq.com ,特别感谢！</p>
+</li>
+                    <li class="recent_comment_author">--机制神</li>
+                    <li class="recent_comment_title"><a href="https://www.cnblogs.com/swarmbees/p/10844338.html">2. Re:Qt实现炫酷启动图-动态进度条</a></li>
+                    <li class="recent_comment_body"><p>楼主你好，特地注册账号来求源码，420921698@qq.com，万分感谢！</p>
+</li>
+                    <li class="recent_comment_author">--eiphp</li>
+                    <li class="recent_comment_title"><a href="https://www.cnblogs.com/swarmbees/p/10844338.html">3. Re:Qt实现炫酷启动图-动态进度条</a></li>
+                    <li class="recent_comment_body"><p>你好，想要学习一下    839355255@qq.com  谢谢</p>
+</li>
+                    <li class="recent_comment_author">--无故事菌</li>
+                    <li class="recent_comment_title"><a href="https://www.cnblogs.com/swarmbees/p/10844338.html">4. Re:Qt实现炫酷启动图-动态进度条</a></li>
+                    <li class="recent_comment_body"><p>楼主你好，特地注册账号来求源码，86864864@qq.com，万分感谢！</p>
+</li>
+                    <li class="recent_comment_author">--kevin-shaw</li>
+                    <li class="recent_comment_title"><a href="https://www.cnblogs.com/swarmbees/p/11167659.html">5. Re:Qt实现表格树控件-支持多级表头</a></li>
+                    <li class="recent_comment_body">如果说要在QTableView或者QTableWidget表头上试用上标而不影响其原来的功能怎么搞，我用富文本重载了QTableView的paintSection实现了上标设置，但是显示位置和其原有功...</li>
+                    <li class="recent_comment_author">--YZH_RM</li>
+        </ul>
+    </div>
+</div>
+
+
+</div>
+
+
+
+<!-- 阅读排行榜 -->
+<div id="sidebar_topviewedposts" class="sidebar-block">
+    <div class="catListView">
+<h3 class="catListTitle">阅读排行榜</h3>
+	<div id="TopViewPostsBlock">
+        <ul style="word-break:break-all">
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/6059812.html">
+                            1. QCustomplot使用分享(六) 坐标轴和网格线(25717)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/6081823.html">
+                            2. qml基础学习 基础概念(19294)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/6058942.html">
+                            3. QCustomplot使用分享(五) 布局(17671)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/5710714.html">
+                            4. Qt之QComboBox定制(16832)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/6635467.html">
+                            5. NSQ之粗读浅谈(12616)
+                        </a>
+                    </li>
+        </ul>
+    </div>
+</div>
+
+
+</div>
+
+<!-- 评论排行榜 -->
+<div id="sidebar_topcommentedposts" class="sidebar-block">
+    <div class="catListFeedback">
+<h3 class="catListTitle">评论排行榜</h3>
+	<div id="TopFeedbackPostsBlock">
+        <ul style="word-break:break-all">
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/10844338.html">
+                            1. Qt实现炫酷启动图-动态进度条(79)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/6060473.html">
+                            2. QCustomplot使用分享(七) 层(完结)(23)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/10023491.html">
+                            3. Python-定时爬取指定城市天气(一)-发送给关心的微信好友(13)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/6059812.html">
+                            4. QCustomplot使用分享(六) 坐标轴和网格线(9)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.cnblogs.com/swarmbees/p/6058942.html">
+                            5. QCustomplot使用分享(五) 布局(9)
+                        </a>
+                    </li>
+        </ul>
+    </div>
+</div>
+
+
+</div>
+
+<!-- 推荐排行榜 -->
+<div id="sidebar_topdiggedposts" class="sidebar-block">
+    
+<div id="topdigg_posts_wrap">
+    <div class="catListView">
+        <h3 class="catListTitle">推荐排行榜</h3>
+        <div id="TopDiggPostsBlock">
+            <ul style="word-break: break-all">
+                        <li>
+                            <a href="https://www.cnblogs.com/swarmbees/p/10023491.html">
+                                1. Python-定时爬取指定城市天气(一)-发送给关心的微信好友(8)
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://www.cnblogs.com/swarmbees/p/9288902.html">
+                                2. Qt之表格控件蚂蚁线(7)
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://www.cnblogs.com/swarmbees/p/11100513.html">
+                                3. 多进程界面开发-Qt试玩儿(7)
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://www.cnblogs.com/swarmbees/p/10844338.html">
+                                4. Qt实现炫酷启动图-动态进度条(7)
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://www.cnblogs.com/swarmbees/p/10046975.html">
+                                5. 防止系统锁屏-python、C++实现(5)
+                            </a>
+                        </li>
+            </ul>
+        </div>
+    </div>
+</div>
+</div></div>
+                    <script>loadBlogSideColumn();</script>
+			</div>
+			
+		</div><!--end: sideBarMain -->
+	</div><!--end: sideBar 侧边栏容器 -->
+	<div class="clear"></div>
+	</div><!--end: main -->
+	<div class="clear"></div>
+	<div id="footer">
+		<!--done-->
+Copyright © 2020 朝十晚八
+<br><span id="poweredby">Powered by .NET Core on Kubernetes</span>
+
+
+
+	</div><!--end: footer -->
+</div><!--end: home 自定义的最大容器 -->
+
+
+    <div id="page_end_html">
+        
+
+
+<script type="text/javascript" src="http://www.keleyi.com/keleyi/pmedia/jquery-1.8.2.min.js"></script>
+<script language="javascript" type="text/javascript">
+//生成目录索引列表
+function GenerateContentList()
+{
+    var jquery_h3_list = $('#cnblogs_post_body h3');//如果你的章节标题不是h3,只需要将这里的h3换掉即可
+    if(jquery_h3_list.length>0)
+    {
+        var content = '<a name="_labelTop"></a>';
+        content    += '<div id="navCategory">';
+        content    += '<p style="font-size:18px"><b>阅读目录</b></p>';
+        content    += '<ul>';
+        for(var i =0;i<jquery_h3_list.length;i++)
+        {
+            var go_to_top = '<div style="text-align: right"><a href="#_labelTop">回到顶部</a><a name="_label' + i + '"></a></div>';
+            $(jquery_h3_list[i]).before(go_to_top);
+            var li_content = '<li><a href="#_label' + i + '">' + $(jquery_h3_list[i]).text() + '</a></li>';
+            content += li_content;
+        }
+        content    += '</ul>';
+        content    += '</div>';
+        if($('#cnblogs_post_body').length != 0 )
+        {
+            $($('#cnblogs_post_body')[0]).prepend(content);
+        }
+    }    
+}
+</script>
+<style type="text/css">
+p#back-to-top{
+position:fixed;
+display:none;
+bottom:5px;
+right:50px;
+}
+p#back-to-top a{
+text-align:center;
+text-decoration:none;
+color:#000;
+display:block;
+width:64px;
+/*使用CSS3中的transition属性给跳转链接中的文字添加渐变效果*/
+-moz-transition:color 1s;
+-webkit-transition:color 1s;
+-o-transition:color 1s;
+}
+p#back-to-top a:hover{
+color:#979797;
+}
+p#back-to-top a span{
+background:transparent url('http://www.keleyi.com/keleyi/pmedia/go-top-keleyi-com.png') no-repeat -10px 15px;
+display:block;
+height:90px;
+width:90px;
+margin-bottom:5px;
+/*使用CSS3中的transition属性给<span>标签背景颜色添加渐变效果*/
+-moz-transition:background 1s;
+-webkit-transition:background 1s;
+-o-transition:background 1s;
+}
+#back-to-top a:hover span{
+background:transparent url('http://www.keleyi.com/keleyi/pmedia/go-top-keleyi-com.png') no-repeat -10px 18px;
+}
+</style>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?f83cd962a901b0c1dbf640f8a28049ff";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+ </script>
+
+
+<p id="back-to-top" style="display: block;"><a href="https://www.cnblogs.com/swarmbees/p/10862160.html#top"><span></span>返回顶部</a></p>
+<script type="text/javascript">
+$(function () {
+//当滚动条的位置处于距顶部100像素以下时，跳转链接出现，否则消失
+$(function () {
+$(window).scroll(function () {
+if ($(window).scrollTop() > 100) {
+$("#back-to-top").fadeIn(100);
+}
+else {
+$("#back-to-top").fadeOut(100);
+}
+});
+
+//当点击跳转链接后，回到页面顶部位置 keleyi.com
+
+$("#back-to-top").click(function () {
+$('body,html').animate({ scrollTop: 0 }, 0);
+return false;
+});
+});
+});
+</script>
+
+
+    </div>
+
+
+<div class="xl-chrome-ext-bar" id="xl_chrome_ext_{4DB361DE-01F7-4376-B494-639E489D19ED}" style="display: none;">
+      <div class="xl-chrome-ext-bar__logo"></div>
+
+      <a id="xl_chrome_ext_download" href="javascript:;" class="xl-chrome-ext-bar__option">下载视频</a>
+      <a id="xl_chrome_ext_close" href="javascript:;" class="xl-chrome-ext-bar__close"></a>
+    </div></body></html>
