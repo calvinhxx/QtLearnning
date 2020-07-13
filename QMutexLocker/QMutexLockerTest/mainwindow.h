@@ -7,6 +7,18 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+#include <QMutex>
+#include <QMutexLocker>
+class CommonVar
+{
+public:
+    static void SetText(QString text);
+    static QString GetText();
+private:
+    static QMutex mutex;
+    static QString text;
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
